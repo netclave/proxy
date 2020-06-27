@@ -1,0 +1,22 @@
+{
+    "host": {
+        "httpaddress": ":9998",
+        "grpcaddress": "localhost:6664"
+    },
+    "datastorage" : {
+        "credentials": {
+            "filename": "/home/gbodurov/proxy.db"
+        },
+    	"type": "sqlite"
+    },
+    "rules" : {
+        "localhost" : [
+            {
+                "/test": "http://localhost:9997"
+            },
+            {
+                "/": "http://localhost:9999"
+            }
+        ]
+    }
+}
