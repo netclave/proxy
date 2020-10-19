@@ -40,7 +40,7 @@ var ProxyRules map[string][]map[string]string
 func Init() error {
 	ProxyRules = map[string][]map[string]string{}
 
-	flag.String("configFile", "~/config.json", "Provide full path to your config json file")
+	flag.String("configFile", "/opt/config.json", "Provide full path to your config json file")
 
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()

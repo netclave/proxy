@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"os/exec"
 
 	api "github.com/netclave/apis/proxy/api"
 	"github.com/netclave/common/cryptoutils"
@@ -102,18 +101,6 @@ func (s *GrpcServer) ListIdentityProviders(ctx context.Context, in *api.ListIden
 	return &api.ListIdentityProvidersResponse{
 		IdentityProviders: identityProviders,
 	}, nil
-}
-
-var BinSh = "/bin/sh"
-var C = "-c"
-
-func runCommandGetOutput(command string) (string, error) {
-	b, err := exec.Command(BinSh, C, command).Output()
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
 }
 
 func (s *GrpcServer) ConfirmIdentityProvider(ctx context.Context, in *api.ConfirmIdentityProviderRequest) (*api.ConfirmIdentityProviderResponse, error) {
