@@ -30,7 +30,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/netclave/proxy/config"
+
 	"github.com/netclave/common/cryptoutils"
+	"github.com/netclave/common/networkutils"
+	"github.com/netclave/common/utils"
 	"github.com/netclave/proxy/component"
 )
 
@@ -43,6 +47,16 @@ type Handle struct {
 func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cryptoStorage := component.CreateCryptoStorage()
 	dataStorage := component.CreateDataStorage()
+
+	fail2banDataStorage := component.CreateFail2BanDataStorage()
+
+	event, err := utils.CreateSimpleEvent(networkutils.GetRemoteAddress(r))
+
+	if err != nil {
+		log.Printf(err.Error())
+		http.Error(w, err.Error(), 500)
+		return
+	}
 
 	host := r.Host
 	path := r.URL.Path
@@ -64,6 +78,13 @@ func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ok == false {
+		err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
 		log.Printf("No rule found")
 		http.Error(w, "No rule found", 500)
 		return
@@ -90,6 +111,13 @@ func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if proxyOK == false {
+		err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
 		log.Printf("No rule found")
 		http.Error(w, "No rule found", 500)
 		return
@@ -204,6 +232,13 @@ func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 					servicesJSON, err := dataStorage.GetKey(component.SERVICES, walletID)
 					if err != nil {
+						err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+						if err != nil {
+							log.Printf(err.Error())
+							http.Error(w, err.Error(), 500)
+							return
+						}
+
 						log.Printf(err.Error())
 						http.Error(w, err.Error(), 500)
 						return
@@ -255,6 +290,13 @@ func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hasValidNetClaveCookie == false {
+		err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
 		log.Printf("No access")
 		http.Error(w, "No access", 500)
 		return
@@ -264,6 +306,13 @@ func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Upgrade") == "websocket" && isHJ {
 		c, br, err := hj.Hijack()
 		if err != nil {
+			err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+			if err != nil {
+				log.Printf(err.Error())
+				http.Error(w, err.Error(), 500)
+				return
+			}
+
 			log.Printf("websocket websocket hijack: %v", err)
 			http.Error(w, err.Error(), 500)
 			return
@@ -281,12 +330,26 @@ func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			be, err = net.DialTimeout("tcp", withoutProtocol, 30*time.Second)
 		}
 		if err != nil {
+			err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+			if err != nil {
+				log.Printf(err.Error())
+				http.Error(w, err.Error(), 500)
+				return
+			}
+
 			log.Printf("websocket Dial: %v", err)
 			http.Error(w, err.Error(), 500)
 			return
 		}
 		defer be.Close()
 		if err := r.Write(be); err != nil {
+			err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+			if err != nil {
+				log.Printf(err.Error())
+				http.Error(w, err.Error(), 500)
+				return
+			}
+
 			log.Printf("websocket backend write request: %v", err)
 			http.Error(w, err.Error(), 500)
 			return
@@ -316,6 +379,13 @@ func (hd *Handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	url, err := url.Parse(proxyURL)
 	if err != nil {
+		err = utils.StoreBannedIP(fail2banDataStorage, event, config.Fail2BanTTL)
+		if err != nil {
+			log.Printf(err.Error())
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
 		log.Printf("Can not parse url: %v", err)
 		http.Error(w, err.Error(), 500)
 		return

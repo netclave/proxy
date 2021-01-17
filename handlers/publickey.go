@@ -20,13 +20,24 @@ import (
 	"net/http"
 
 	"github.com/netclave/common/jsonutils"
+	"github.com/netclave/common/networkutils"
+	"github.com/netclave/common/utils"
 	"github.com/netclave/proxy/component"
+	"github.com/netclave/proxy/config"
 )
 
 type GetPublicKeyForm struct {
 }
 
 func GetPublicKey(w http.ResponseWriter, r *http.Request) {
+	fail2banDataStorage := component.CreateFail2BanDataStorage()
+
+	fail2BanData := &utils.Fail2BanData{
+		DataStorage:   fail2banDataStorage,
+		RemoteAddress: networkutils.GetRemoteAddress(r),
+		TTL:           config.Fail2BanTTL,
+	}
+
 	proxyID := component.ComponentIdentificatorID
 	privateKeyPEM := component.ComponentPrivateKey
 	publicKeyPEM := component.ComponentPublicKey
@@ -35,9 +46,9 @@ func GetPublicKey(w http.ResponseWriter, r *http.Request) {
 		privateKeyPEM, publicKeyPEM, "", true)
 
 	if err != nil {
-		jsonutils.EncodeResponse("400", "Can not sign response", err.Error(), w)
+		jsonutils.EncodeResponse("400", "Can not sign response", err.Error(), w, fail2BanData)
 		return
 	}
 
-	jsonutils.EncodeResponse("200", "OK", signedResponse, w)
+	jsonutils.EncodeResponse("200", "OK", signedResponse, w, fail2BanData)
 }

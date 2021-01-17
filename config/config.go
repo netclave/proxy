@@ -31,6 +31,10 @@ import (
 var DataStorageCredentials map[string]string
 var StorageType string
 
+var Fail2BanDataStorageCredentials map[string]string
+var Fail2BanStorageType string
+var Fail2BanTTL int64
+
 var TokenTTL = time.Duration(300)
 
 var ListenProxyAddress = ":9998"
@@ -73,6 +77,15 @@ func Init() error {
 	})
 	viper.SetDefault("datastorage.type", storage.REDIS_STORAGE)
 
+	viper.SetDefault("fail2bandatastorage.credentials", map[string]string{
+		"host":     "localhost:6379",
+		"db":       "5",
+		"password": "",
+	})
+	viper.SetDefault("fail2bandatastorage.type", storage.REDIS_STORAGE)
+
+	viper.SetDefault("fail2banttl", int64(300000))
+
 	hostConfig := viper.Sub("host")
 
 	ListenProxyAddress = hostConfig.GetString("httpaddress")
@@ -85,6 +98,13 @@ func Init() error {
 
 	DataStorageCredentials = datastorageConfig.GetStringMapString("credentials")
 	StorageType = datastorageConfig.GetString("type")
+
+	fail2banDatastorageConfig := viper.Sub("fail2bandatastorage")
+
+	Fail2BanDataStorageCredentials = fail2banDatastorageConfig.GetStringMapString("credentials")
+	Fail2BanStorageType = fail2banDatastorageConfig.GetString("type")
+
+	Fail2BanTTL = viper.GetInt64("fail2banttl")
 
 	hostsKeys := viper.GetStringMap("rules")
 

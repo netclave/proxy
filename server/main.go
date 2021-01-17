@@ -28,6 +28,7 @@ import (
 
 	api "github.com/netclave/apis/proxy/api"
 	"github.com/netclave/common/cryptoutils"
+	"github.com/netclave/common/utils"
 	"github.com/netclave/proxy/component"
 	"github.com/netclave/proxy/config"
 	"github.com/netclave/proxy/handlers"
@@ -209,6 +210,23 @@ func startProxyServer(bind string, rules map[string][]map[string]string) error {
 	return nil
 }
 
+func startFail2BanDeamon() error {
+	for {
+		fail2banDataStorage := component.CreateFail2BanDataStorage()
+
+		err := utils.LogBannedIPs(fail2banDataStorage)
+
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+
+	return nil
+}
+
 func main() {
 	err := component.LoadComponent()
 	if err != nil {
@@ -234,6 +252,14 @@ func main() {
 
 	go func() {
 		err := startProxyServer(config.ListenProxyAddress, config.ProxyRules)
+
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}()
+
+	go func() {
+		err := startFail2BanDeamon()
 
 		if err != nil {
 			log.Println(err.Error())
